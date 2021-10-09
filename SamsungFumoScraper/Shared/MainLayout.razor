@@ -1,0 +1,48 @@
+@inherits LayoutComponentBase
+@inject NavigationManager _navigationManager
+
+<MudThemeProvider Theme="_currentTheme"/>
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0">
+        <MudIconButton Icon="@Icons.Material.TwoTone.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        <MudText Typo="Typo.h6" Class="mudblazor-appbar-brand-text d-none d-sm-flex">Samsung FUMO scraper</MudText>
+        <MudSpacer />
+        <MudTooltip Text="Toggle light/dark theme">
+            <MudIconButton Icon="@Icons.Material.Filled.Brightness4" Color="Color.Inherit" OnClick="@((e) => DarkMode())" />
+        </MudTooltip>
+        <MudTooltip Text="Contact me on Telegram">
+            <MudIconButton Icon="@Icons.Custom.Brands.Telegram" Color="Color.Inherit" OnClick="@((e) => _navigationManager.NavigateTo("https://t.me/thepbone"))" Target="_blank" />
+        </MudTooltip>
+        <MudTooltip Text="View source code">
+            <MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" OnClick="@((e) => _navigationManager.NavigateTo("https://github.com/thepbone/SamsungFumoScraper"))" Target="_blank" />
+        </MudTooltip>
+    </MudAppBar>
+    <MudHidden Breakpoint="@Breakpoint.Xs" IsHiddenChanged="@XsBreakpointHit" />
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="1" Width="280px" Variant="@_drawerVariant" 
+               OpenMiniOnHover="true" Breakpoint="@Breakpoint.Md" PreserveOpenState="false" ClipMode="@DrawerClipMode.Always">
+        <NavMenu />
+    </MudDrawer>
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    DrawerVariant _drawerVariant = DrawerVariant.Mini;
+    bool _drawerOpen = false;
+
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    private void XsBreakpointHit(bool b)
+    {
+        _drawerVariant = b ? DrawerVariant.Responsive : DrawerVariant.Mini;
+        StateHasChanged();
+    }
+
+}

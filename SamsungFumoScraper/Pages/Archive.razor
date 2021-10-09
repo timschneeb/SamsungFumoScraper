@@ -1,0 +1,108 @@
+﻿@page "/archive"
+@using System.Globalization
+@inject HttpClient _http
+@inject IJSRuntime JSRuntime;
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-6">
+    <MudText Typo="Typo.h4" GutterBottom="true">Firmware archive</MudText>
+    <MudText Class="mb-8">
+        <p>
+            Automated firmware archive. Currently only firmware binaries for the Galaxy Buds earbud family are scraped and backed up here.
+        </p>
+        <p>
+            These files can be flashed onto Galaxy Buds devices using my open-source <MudLink Href="https://github.com/thepbone/GalaxyBudsClient" Target="_blank">GalaxyBudsClient</MudLink> software (firmware downgrading is possible with this tool too); however, you may need to rename the file extension to '.bin'.
+        </p>
+    </MudText>
+    @if (_fetchException != null)
+    {
+        <MudAlert Icon="@Icons.Material.TwoTone.Error" Severity="Severity.Error">
+            Something went wrong, please try again later. Details: @_fetchException
+        </MudAlert>
+    }
+    else if (_binaries == null)
+    {
+        <MudProgressCircular Color="Color.Default" Indeterminate="true" />
+    }
+    else
+    {
+        <MudTable Items="_binaries" Hover="true" SortLabel="Sort by" Striped="true" OnRowClick="@((TableRowClickEventArgs<FirmwareBinary> param) => {RowClicked(param);})"
+                  Filter="new Func<FirmwareBinary,bool>(FilterFuncWrap)" Elevation="0">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Galaxy Buds archive</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh><MudTableSortLabel SortBy="new Func<FirmwareBinary, object>(x => x.Model)">Model</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<FirmwareBinary, object>(x => x.BuildName)">Version</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<FirmwareBinary, object>(x => x.Year)">Year</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<FirmwareBinary, object>(x => x.Month)">Month</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<FirmwareBinary, object>(x => x.Revision)">Revision</MudTableSortLabel></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Model">@context.Model</MudTd>
+                <MudTd DataLabel="Version">@context.BuildName</MudTd>
+                <MudTd DataLabel="Year">@context.Year</MudTd>
+                <MudTd DataLabel="Month">@CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(context.Month)</MudTd>
+                <MudTd DataLabel="Revision">@context.Revision</MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[] { 10, 20, 50, 100 }"/>
+            </PagerContent>
+        </MudTable>
+    }
+    
+    <DonationCard class="mt-8"/>
+</MudContainer>
+
+@code 
+{
+    private string _searchString = string.Empty;
+    private FirmwareBinary[]? _binaries;
+    private string? _fetchException;
+
+    private bool FilterFuncWrap(FirmwareBinary element) => FilterFunc(element, _searchString);
+    private bool FilterFunc(FirmwareBinary element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Model.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.BuildName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+    
+    private void RowClicked(TableRowClickEventArgs<FirmwareBinary> p)
+    {
+        JSRuntime.InvokeAsync<string>("open", $"https://fw.timschneeberger.me/v2/firmware/download/{p.Item.BuildName}", "_blank");
+    }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _binaries = await _http.GetFromJsonAsync<FirmwareBinary[]>("https://fw.timschneeberger.me/v2/firmware");
+            if (_binaries == null)
+            {
+                _fetchException = "API call failed";
+            }
+        }
+        catch (Exception e)
+        {
+            _fetchException = e.Message;
+        }
+    }
+
+    public class FirmwareBinary
+    {
+        public string Model { get; set; }
+        public string BuildName { get; set; }
+        public string Region { get; set; }
+        public string BootloaderVersion { get; set; }
+        public string ReservedField { get; set; }
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public int Revision { get; set; }
+    }
+}

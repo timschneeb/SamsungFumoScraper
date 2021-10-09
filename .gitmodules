@@ -1,0 +1,3 @@
+[submodule "SamsungFumoClient"]
+	path = SamsungFumoClient
+	url = git@github.com:thepbone/SamsungFumoClient

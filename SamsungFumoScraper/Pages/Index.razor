@@ -1,0 +1,70 @@
+﻿@page "/"
+@using SamsungFumoScraper.Model
+@using MudBlazor.Extensions
+
+@inject NavigationManager _nav;
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-6">
+    @if(_state == PageState.Initial)
+    {
+        <MudText Typo="Typo.h4" GutterBottom="true">Firmware downloader</MudText>
+        <MudText Class="mb-6">
+            <p>
+                Generate download links for all kinds of Samsung devices using Samsung's OMA-DM API with FUMO extensions.
+                <MudLink Href="/how-it-works">Click here</MudLink> to find out how this app works and how it differs from existing firmware download software.
+            </p>
+            <p>
+                Please select the tab that is most suitable for your target device below:
+            </p>
+            <ul>
+                <li><b>Android devices</b>: Use this mode if you specifically want to download firmware for a Samsung mobile device running Android</li>
+                <li><b>Galaxy Buds</b>: Use this mode if you specifically want to download firmware for a Samsung Galaxy Buds device</li>
+                <li><b>Advanced mode</b>: This mode allows you to choose all parameters freely. Useful, if you want to retrieve firmware of more 'exotic' Samsung devices or if you want to experiment with this downloader.</li>
+            </ul>
+        </MudText>
+        <MudTabs Elevation="1" Rounded="true" Border="true" Outlined="true"
+                 ApplyEffectsToContainer="true" PanelClass="pa-6" Class="mb-8"
+                 @bind-ActivePanelIndex="_tabIndex">
+            @foreach (var tab in _tabs)
+            {
+                <MudTabPanel Text="@tab.ToDescriptionString()" Tag="@tab">
+                    <DownloaderForm Mode="@tab" OnSubmit="OnSubmitDownloaderForm"/>
+                </MudTabPanel>
+            }
+        </MudTabs>
+    }
+    else
+    {
+        <WorkerComponent class="mb-4" Parameter="@_downloaderParamModel"/>
+    }
+    <DonationCard/>
+</MudContainer>
+
+@code
+{
+    enum PageState
+    {
+        Initial,
+        Progress
+    }
+
+    private DownloaderParamModel? _downloaderParamModel;
+    private PageState _state = PageState.Initial;
+    
+    private int _tabIndex;
+    private readonly List<PresetModes> _tabs = new();
+
+    protected override Task OnInitializedAsync()
+    {
+        _tabs.AddRange(Enum.GetValues(typeof(PresetModes)).Cast<PresetModes>());
+        return base.OnInitializedAsync();
+    }
+
+    private void OnSubmitDownloaderForm(DownloaderParamModel obj)
+    {
+        _downloaderParamModel = obj;
+        _state = PageState.Progress;
+        _nav.NavigateTo("#download");
+        StateHasChanged();
+    }
+}
